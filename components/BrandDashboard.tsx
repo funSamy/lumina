@@ -27,7 +27,67 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    // Could add toast here
+  };
+
+  const renderUsageVisual = (hex: string, usage: string) => {
+    const u = usage.toLowerCase();
+    
+    // Text / Typography
+    if (u.match(/text|font|typography|heading|body|title/)) {
+      return (
+        <div className="flex items-center justify-center w-full h-full bg-slate-950/80" title="Typography">
+          <span style={{ color: hex }} className="font-serif text-lg font-bold">Aa</span>
+        </div>
+      );
+    }
+    
+    // Background / Surface
+    if (u.match(/background|surface|canvas|neutral|fill/)) {
+      return (
+        <div className="w-full h-full relative" style={{ backgroundColor: hex }} title="Background">
+           <div className="absolute inset-0 border border-black/5" />
+           <div className="absolute inset-2 bg-white/10 rounded-sm" />
+        </div>
+      );
+    }
+  
+    // Primary / Action / Button
+    if (u.match(/primary|action|button|cta|main/)) {
+       return (
+         <div className="flex flex-col items-center justify-center w-full h-full bg-slate-950/80 gap-1 p-1.5" title="Interactive Element">
+            <div className="w-full h-1 bg-slate-700 rounded-full opacity-50" />
+            <div className="w-full h-1 bg-slate-700 rounded-full opacity-50" />
+            <div className="mt-auto w-full h-2.5 rounded-[2px] shadow-sm" style={{ backgroundColor: hex }} />
+         </div>
+       );
+    }
+  
+    // Accent / Highlight
+    if (u.match(/accent|highlight|decoration|pop/)) {
+       return (
+         <div className="flex items-center justify-center w-full h-full bg-slate-950/80 relative" title="Accent">
+            <div className="w-6 h-6 rounded-md bg-slate-800 border border-slate-700 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-3 h-3 rounded-bl-md" style={{ backgroundColor: hex }} />
+            </div>
+         </div>
+       );
+    }
+  
+    // Secondary / Border / Outline
+    if (u.match(/secondary|border|stroke|outline|tertiary/)) {
+      return (
+        <div className="flex items-center justify-center w-full h-full bg-slate-950/80" title="Secondary / Outline">
+          <div className="w-6 h-6 rounded-md border-2" style={{ borderColor: hex }} />
+        </div>
+      );
+    }
+  
+    // Fallback - Generic Swatch
+    return (
+      <div className="flex items-center justify-center w-full h-full bg-slate-950/80" title="Color Swatch">
+        <div className="w-5 h-5 rounded-full shadow-sm ring-1 ring-white/10" style={{ backgroundColor: hex }} />
+      </div>
+    );
   };
 
   return (
@@ -90,16 +150,11 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
         <h3 className="text-xl font-semibold text-white mb-6">Color Palette</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {strategy.colors.map((color, idx) => {
-            // Determine usage type for visualization
-            const usageLower = color.usage.toLowerCase();
-            const isText = /text|font|typography|heading|body/.test(usageLower);
-            const isBg = /background|surface|canvas|neutral/.test(usageLower);
-
             return (
               <div key={idx} className="group relative bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden hover:border-slate-500 transition-colors flex flex-col">
                 {/* Main Swatch */}
                 <div 
-                  className="h-24 w-full relative"
+                  className="h-24 w-full relative transition-transform duration-500 group-hover:scale-105"
                   style={{ backgroundColor: color.hex }}
                 >
                    {/* Hex Badge Overlay */}
@@ -125,17 +180,8 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
                    <div className="mt-auto pt-3 border-t border-white/5">
                      <div className="flex items-center gap-3">
                        {/* Visual Icon */}
-                       <div 
-                         className="shrink-0 w-10 h-10 rounded-lg border border-slate-600/50 overflow-hidden flex items-center justify-center bg-slate-900/50"
-                         title={`Example usage: ${color.usage}`}
-                       >
-                          {isText ? (
-                            <span style={{ color: color.hex }} className="text-xl font-serif font-bold">Aa</span>
-                          ) : isBg ? (
-                            <div className="w-full h-full" style={{ backgroundColor: color.hex }} />
-                          ) : (
-                            <div className="w-5 h-5 rounded-md shadow-sm" style={{ backgroundColor: color.hex }} />
-                          )}
+                       <div className="shrink-0 w-10 h-10 rounded-lg border border-slate-600/50 overflow-hidden">
+                          {renderUsageVisual(color.hex, color.usage)}
                        </div>
                        
                        {/* Usage Label */}
