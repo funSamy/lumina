@@ -92,8 +92,6 @@ export const generateLogoImage = async (prompt: string): Promise<string> => {
     config: {
       imageConfig: {
         aspectRatio: "1:1",
-        imageSize: '2K'
-        // imageSize is not supported/needed for Flash Image
       }
     }
   });

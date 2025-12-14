@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrandIdentity } from '../types';
-import { Download, Copy, ExternalLink, RefreshCw } from 'lucide-react';
+import { Download, Copy, ExternalLink, RefreshCw, SlidersHorizontal, X, Check } from 'lucide-react';
 import { generateLogoImage } from '../services/geminiService';
 
 interface Props {
@@ -12,8 +12,16 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
 
   const [primaryUrl, setPrimaryUrl] = useState<string | null>(initialPrimaryUrl);
   const [secondaryUrl, setSecondaryUrl] = useState<string | null>(initialSecondaryUrl);
+  
+  // Prompt state
+  const [primaryPrompt, setPrimaryPrompt] = useState(strategy?.logoPrompts.primary || '');
+  const [secondaryPrompt, setSecondaryPrompt] = useState(strategy?.logoPrompts.secondary || '');
+  
+  // UI state
   const [isRegeneratingPrimary, setIsRegeneratingPrimary] = useState(false);
   const [isRegeneratingSecondary, setIsRegeneratingSecondary] = useState(false);
+  const [isEditingPrimary, setIsEditingPrimary] = useState(false);
+  const [isEditingSecondary, setIsEditingSecondary] = useState(false);
 
   // Sync state if props change (e.g. user generated a completely new identity)
   useEffect(() => {
@@ -23,6 +31,13 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
   useEffect(() => {
     setSecondaryUrl(initialSecondaryUrl);
   }, [initialSecondaryUrl]);
+
+  useEffect(() => {
+    if (strategy) {
+      setPrimaryPrompt(strategy.logoPrompts.primary);
+      setSecondaryPrompt(strategy.logoPrompts.secondary);
+    }
+  }, [strategy]);
 
   useEffect(() => {
     if (strategy?.typography) {
@@ -47,19 +62,20 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
   const handleRegenerate = async (type: 'primary' | 'secondary') => {
     if (type === 'primary') {
       setIsRegeneratingPrimary(true);
+      setIsEditingPrimary(false); // Close edit mode
       try {
-        const newUrl = await generateLogoImage(strategy.logoPrompts.primary);
+        const newUrl = await generateLogoImage(primaryPrompt);
         setPrimaryUrl(newUrl);
       } catch (error) {
         console.error("Failed to regenerate primary logo", error);
-        // Optional: Add toast or error feedback
       } finally {
         setIsRegeneratingPrimary(false);
       }
     } else {
       setIsRegeneratingSecondary(true);
+      setIsEditingSecondary(false); // Close edit mode
       try {
-        const newUrl = await generateLogoImage(strategy.logoPrompts.secondary);
+        const newUrl = await generateLogoImage(secondaryPrompt);
         setSecondaryUrl(newUrl);
       } catch (error) {
         console.error("Failed to regenerate secondary mark", error);
@@ -140,26 +156,57 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
 
       {/* Logos Section */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        {/* Primary Logo Card */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 backdrop-blur-sm">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold text-white">Primary Logo</h3>
             <button 
-              onClick={() => handleRegenerate('primary')}
-              disabled={isRegeneratingPrimary || !primaryUrl}
-              className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
-              title="Regenerate Logo"
+              onClick={() => setIsEditingPrimary(!isEditingPrimary)}
+              disabled={isRegeneratingPrimary}
+              className={`p-2 rounded-lg transition-colors ${isEditingPrimary ? 'bg-indigo-600 text-white' : 'hover:bg-slate-700 text-slate-400 hover:text-white'}`}
+              title="Edit Prompt & Regenerate"
             >
-              <RefreshCw size={18} className={isRegeneratingPrimary ? "animate-spin" : ""} />
+              <SlidersHorizontal size={18} />
             </button>
           </div>
           <div className="aspect-square w-full bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center relative group">
+            {isEditingPrimary ? (
+              <div className="absolute inset-0 p-4 bg-slate-800/95 backdrop-blur-sm z-20 flex flex-col animate-fade-in">
+                <label className="text-xs uppercase text-slate-400 font-bold mb-2 flex justify-between">
+                  <span>Prompt Editor</span>
+                  <span className="text-indigo-400 text-[10px] cursor-pointer hover:underline" onClick={() => setPrimaryPrompt(strategy.logoPrompts.primary)}>Reset to Default</span>
+                </label>
+                <textarea
+                  value={primaryPrompt}
+                  onChange={(e) => setPrimaryPrompt(e.target.value)}
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white resize-none focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-3 font-mono leading-relaxed"
+                  placeholder="Describe the logo..."
+                />
+                <div className="flex gap-2 h-10">
+                  <button
+                    onClick={() => setIsEditingPrimary(false)}
+                    className="px-4 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                  <button
+                    onClick={() => handleRegenerate('primary')}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <RefreshCw size={16} /> Regenerate
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             {primaryUrl && !isRegeneratingPrimary ? (
               <>
                 <img src={primaryUrl} alt="Primary Logo" className="w-full h-full object-cover" />
                 <a 
                   href={primaryUrl} 
                   download="primary-logo.png"
-                  className="absolute bottom-4 right-4 p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute bottom-4 right-4 p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
                 >
                   <Download size={20} />
                 </a>
@@ -173,26 +220,56 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
           </div>
         </div>
 
+        {/* Secondary Mark Card */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 backdrop-blur-sm">
            <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold text-white">Secondary Mark</h3>
             <button 
-              onClick={() => handleRegenerate('secondary')}
-              disabled={isRegeneratingSecondary || !secondaryUrl}
-              className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
-              title="Regenerate Mark"
+              onClick={() => setIsEditingSecondary(!isEditingSecondary)}
+              disabled={isRegeneratingSecondary}
+              className={`p-2 rounded-lg transition-colors ${isEditingSecondary ? 'bg-indigo-600 text-white' : 'hover:bg-slate-700 text-slate-400 hover:text-white'}`}
+              title="Edit Prompt & Regenerate"
             >
-              <RefreshCw size={18} className={isRegeneratingSecondary ? "animate-spin" : ""} />
+              <SlidersHorizontal size={18} />
             </button>
           </div>
           <div className="aspect-square w-full bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center relative group">
+             {isEditingSecondary ? (
+              <div className="absolute inset-0 p-4 bg-slate-800/95 backdrop-blur-sm z-20 flex flex-col animate-fade-in">
+                <label className="text-xs uppercase text-slate-400 font-bold mb-2 flex justify-between">
+                  <span>Prompt Editor</span>
+                  <span className="text-indigo-400 text-[10px] cursor-pointer hover:underline" onClick={() => setSecondaryPrompt(strategy.logoPrompts.secondary)}>Reset to Default</span>
+                </label>
+                <textarea
+                  value={secondaryPrompt}
+                  onChange={(e) => setSecondaryPrompt(e.target.value)}
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white resize-none focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-3 font-mono leading-relaxed"
+                  placeholder="Describe the mark..."
+                />
+                <div className="flex gap-2 h-10">
+                  <button
+                    onClick={() => setIsEditingSecondary(false)}
+                    className="px-4 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                  <button
+                    onClick={() => handleRegenerate('secondary')}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <RefreshCw size={16} /> Regenerate
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             {secondaryUrl && !isRegeneratingSecondary ? (
               <>
                 <img src={secondaryUrl} alt="Secondary Mark" className="w-full h-full object-cover" />
                 <a 
                   href={secondaryUrl} 
                   download="secondary-mark.png"
-                  className="absolute bottom-4 right-4 p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute bottom-4 right-4 p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
                 >
                   <Download size={20} />
                 </a>
