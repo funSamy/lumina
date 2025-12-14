@@ -89,24 +89,66 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
       <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-8 backdrop-blur-sm">
         <h3 className="text-xl font-semibold text-white mb-6">Color Palette</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {strategy.colors.map((color, idx) => (
-            <div key={idx} className="group relative">
-              <div 
-                className="h-32 w-full rounded-xl shadow-lg mb-3 border border-white/5 transition-transform group-hover:scale-105"
-                style={{ backgroundColor: color.hex }}
-              />
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-white">{color.hex}</p>
-                  <button onClick={() => copyToClipboard(color.hex)} className="text-slate-400 hover:text-white">
-                    <Copy size={14} />
-                  </button>
+          {strategy.colors.map((color, idx) => {
+            // Determine usage type for visualization
+            const usageLower = color.usage.toLowerCase();
+            const isText = /text|font|typography|heading|body/.test(usageLower);
+            const isBg = /background|surface|canvas|neutral/.test(usageLower);
+
+            return (
+              <div key={idx} className="group relative bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden hover:border-slate-500 transition-colors flex flex-col">
+                {/* Main Swatch */}
+                <div 
+                  className="h-24 w-full relative"
+                  style={{ backgroundColor: color.hex }}
+                >
+                   {/* Hex Badge Overlay */}
+                   <div className="absolute bottom-2 left-2 bg-black/20 backdrop-blur-md px-2 py-1 rounded text-xs font-mono text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                     {color.hex}
+                   </div>
+                   <button 
+                     onClick={() => copyToClipboard(color.hex)}
+                     className="absolute top-2 right-2 p-1.5 bg-black/10 hover:bg-black/30 backdrop-blur-md rounded-full text-white/80 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                   >
+                     <Copy size={14} />
+                   </button>
                 </div>
-                <p className="text-sm font-medium text-slate-300">{color.name}</p>
-                <p className="text-xs text-slate-500">{color.usage}</p>
+
+                {/* Info Body */}
+                <div className="p-4 flex flex-col flex-1 gap-3">
+                   <div>
+                     <h4 className="text-white font-semibold leading-tight">{color.name}</h4>
+                     <p className="text-xs text-slate-400 font-mono mt-1 opacity-70 group-hover:opacity-100 transition-opacity">{color.hex}</p>
+                   </div>
+                   
+                   {/* Usage Visualization */}
+                   <div className="mt-auto pt-3 border-t border-white/5">
+                     <div className="flex items-center gap-3">
+                       {/* Visual Icon */}
+                       <div 
+                         className="shrink-0 w-10 h-10 rounded-lg border border-slate-600/50 overflow-hidden flex items-center justify-center bg-slate-900/50"
+                         title={`Example usage: ${color.usage}`}
+                       >
+                          {isText ? (
+                            <span style={{ color: color.hex }} className="text-xl font-serif font-bold">Aa</span>
+                          ) : isBg ? (
+                            <div className="w-full h-full" style={{ backgroundColor: color.hex }} />
+                          ) : (
+                            <div className="w-5 h-5 rounded-md shadow-sm" style={{ backgroundColor: color.hex }} />
+                          )}
+                       </div>
+                       
+                       {/* Usage Label */}
+                       <div className="flex flex-col overflow-hidden">
+                         <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Usage</span>
+                         <p className="text-xs text-slate-300 leading-tight truncate w-full" title={color.usage}>{color.usage}</p>
+                       </div>
+                     </div>
+                   </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
