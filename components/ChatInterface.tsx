@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, User, Bot } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { ChatMessage } from '../types';
 import { sendBrandChatMessage } from '../services/geminiService';
 
@@ -67,8 +68,23 @@ export const ChatInterface: React.FC = () => {
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-indigo-600' : 'bg-slate-700'}`}>
                   {msg.role === 'user' ? <User size={14} className="text-white" /> : <Bot size={14} className="text-indigo-400" />}
                 </div>
-                <div className={`max-w-[80%] rounded-2xl p-3 text-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-sm' : 'bg-slate-800 text-slate-200 rounded-tl-sm'}`}>
-                  {msg.text}
+                <div className={`max-w-[85%] rounded-2xl p-3 text-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-sm' : 'bg-slate-800 text-slate-200 rounded-tl-sm'}`}>
+                  <ReactMarkdown
+                    components={{
+                      p: ({node, ...props}) => <p className="mb-2 last:mb-0 leading-relaxed" {...props} />,
+                      strong: ({node, ...props}) => <span className={`font-bold ${msg.role === 'model' ? 'text-white' : ''}`} {...props} />,
+                      ul: ({node, ...props}) => <ul className="list-disc list-outside ml-4 mb-2 space-y-1" {...props} />,
+                      ol: ({node, ...props}) => <ol className="list-decimal list-outside ml-4 mb-2 space-y-1" {...props} />,
+                      li: ({node, ...props}) => <li className="pl-1" {...props} />,
+                      h1: ({node, ...props}) => <h3 className="text-base font-bold mt-3 mb-1 text-white" {...props} />,
+                      h2: ({node, ...props}) => <h4 className="text-sm font-bold mt-3 mb-1 text-white" {...props} />,
+                      h3: ({node, ...props}) => <h5 className="text-xs font-bold uppercase tracking-wider mt-3 mb-1 text-slate-400" {...props} />,
+                      blockquote: ({node, ...props}) => <blockquote className="border-l-2 border-slate-500 pl-3 italic my-2 text-slate-400" {...props} />,
+                      code: ({node, ...props}) => <code className="bg-black/30 px-1 py-0.5 rounded text-xs font-mono" {...props} />,
+                    }}
+                  >
+                    {msg.text}
+                  </ReactMarkdown>
                 </div>
               </div>
             ))}
