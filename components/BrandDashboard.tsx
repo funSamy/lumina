@@ -1,13 +1,28 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrandIdentity } from '../types';
-import { Download, Copy, ExternalLink } from 'lucide-react';
+import { Download, Copy, ExternalLink, RefreshCw } from 'lucide-react';
+import { generateLogoImage } from '../services/geminiService';
 
 interface Props {
   data: BrandIdentity;
 }
 
 export const BrandDashboard: React.FC<Props> = ({ data }) => {
-  const { strategy, primaryLogoUrl, secondaryMarkUrl } = data;
+  const { strategy, primaryLogoUrl: initialPrimaryUrl, secondaryMarkUrl: initialSecondaryUrl } = data;
+
+  const [primaryUrl, setPrimaryUrl] = useState<string | null>(initialPrimaryUrl);
+  const [secondaryUrl, setSecondaryUrl] = useState<string | null>(initialSecondaryUrl);
+  const [isRegeneratingPrimary, setIsRegeneratingPrimary] = useState(false);
+  const [isRegeneratingSecondary, setIsRegeneratingSecondary] = useState(false);
+
+  // Sync state if props change (e.g. user generated a completely new identity)
+  useEffect(() => {
+    setPrimaryUrl(initialPrimaryUrl);
+  }, [initialPrimaryUrl]);
+
+  useEffect(() => {
+    setSecondaryUrl(initialSecondaryUrl);
+  }, [initialSecondaryUrl]);
 
   useEffect(() => {
     if (strategy?.typography) {
@@ -27,6 +42,31 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+  };
+
+  const handleRegenerate = async (type: 'primary' | 'secondary') => {
+    if (type === 'primary') {
+      setIsRegeneratingPrimary(true);
+      try {
+        const newUrl = await generateLogoImage(strategy.logoPrompts.primary);
+        setPrimaryUrl(newUrl);
+      } catch (error) {
+        console.error("Failed to regenerate primary logo", error);
+        // Optional: Add toast or error feedback
+      } finally {
+        setIsRegeneratingPrimary(false);
+      }
+    } else {
+      setIsRegeneratingSecondary(true);
+      try {
+        const newUrl = await generateLogoImage(strategy.logoPrompts.secondary);
+        setSecondaryUrl(newUrl);
+      } catch (error) {
+        console.error("Failed to regenerate secondary mark", error);
+      } finally {
+        setIsRegeneratingSecondary(false);
+      }
+    }
   };
 
   const renderUsageVisual = (hex: string, usage: string) => {
@@ -103,13 +143,21 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
         <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 backdrop-blur-sm">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold text-white">Primary Logo</h3>
+            <button 
+              onClick={() => handleRegenerate('primary')}
+              disabled={isRegeneratingPrimary || !primaryUrl}
+              className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+              title="Regenerate Logo"
+            >
+              <RefreshCw size={18} className={isRegeneratingPrimary ? "animate-spin" : ""} />
+            </button>
           </div>
           <div className="aspect-square w-full bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center relative group">
-            {primaryLogoUrl ? (
+            {primaryUrl && !isRegeneratingPrimary ? (
               <>
-                <img src={primaryLogoUrl} alt="Primary Logo" className="w-full h-full object-cover" />
+                <img src={primaryUrl} alt="Primary Logo" className="w-full h-full object-cover" />
                 <a 
-                  href={primaryLogoUrl} 
+                  href={primaryUrl} 
                   download="primary-logo.png"
                   className="absolute bottom-4 right-4 p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
                 >
@@ -117,7 +165,10 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
                 </a>
               </>
             ) : (
-              <div className="text-slate-500 animate-pulse">Generating Logo...</div>
+              <div className="text-slate-500 flex flex-col items-center gap-3">
+                 <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                 <span className="animate-pulse">{isRegeneratingPrimary ? 'Regenerating...' : 'Generating Logo...'}</span>
+              </div>
             )}
           </div>
         </div>
@@ -125,13 +176,21 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
         <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 backdrop-blur-sm">
            <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold text-white">Secondary Mark</h3>
+            <button 
+              onClick={() => handleRegenerate('secondary')}
+              disabled={isRegeneratingSecondary || !secondaryUrl}
+              className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+              title="Regenerate Mark"
+            >
+              <RefreshCw size={18} className={isRegeneratingSecondary ? "animate-spin" : ""} />
+            </button>
           </div>
           <div className="aspect-square w-full bg-slate-900 rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center relative group">
-            {secondaryMarkUrl ? (
+            {secondaryUrl && !isRegeneratingSecondary ? (
               <>
-                <img src={secondaryMarkUrl} alt="Secondary Mark" className="w-full h-full object-cover" />
+                <img src={secondaryUrl} alt="Secondary Mark" className="w-full h-full object-cover" />
                 <a 
-                  href={secondaryMarkUrl} 
+                  href={secondaryUrl} 
                   download="secondary-mark.png"
                   className="absolute bottom-4 right-4 p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
                 >
@@ -139,7 +198,10 @@ export const BrandDashboard: React.FC<Props> = ({ data }) => {
                 </a>
               </>
             ) : (
-              <div className="text-slate-500 animate-pulse">Generating Mark...</div>
+              <div className="text-slate-500 flex flex-col items-center gap-3">
+                 <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                 <span className="animate-pulse">{isRegeneratingSecondary ? 'Regenerating...' : 'Generating Mark...'}</span>
+              </div>
             )}
           </div>
         </div>
